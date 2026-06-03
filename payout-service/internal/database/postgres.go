@@ -8,12 +8,24 @@ import (
 )
 
 func NewPostgres() *pgxpool.Pool {
-	db, err := pgxpool.New(context.Background(), "postgres://postgres:postgres@localhost:5432/payoutx")
+
+	connString := "postgres://admin:admin@localhost:5433/payoutx?sslmode=disable"
+
+	db, err := pgxpool.New(
+		context.Background(),
+		connString,
+	)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("unable to create connection pool: %v", err)
 	}
 
-	return db
+	err = db.Ping(context.Background())
+	if err != nil {
+		log.Fatalf("unable to ping database: %v", err)
+	}
 
+	log.Println("postgres connected")
+
+	return db
 }

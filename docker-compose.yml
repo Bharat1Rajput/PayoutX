@@ -2,12 +2,13 @@ services:
   postgres:
     image: postgres:16
     container_name: payoutx-postgres
+    restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
       POSTGRES_DB: payoutx
     ports:
-      - "5432:5432"
+      - "5433:5432"
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
