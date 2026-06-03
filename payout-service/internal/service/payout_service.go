@@ -4,17 +4,23 @@ import (
 	"context"
 	"time"
 
-	"github.com/Bharat1Rajput/payout-service/internal/model"
-	"github.com/Bharat1Rajput/payout-service/internal/repository"
+	"github.com/Bharat1Rajput/payoutX/payout-service/internal/model"
+	"github.com/Bharat1Rajput/payoutX/payout-service/internal/repository"
 	"github.com/google/uuid"
+
+	grpcClient "github.com/Bharat1Rajput/payoutX/payout-service/internal/grpc"
 )
 
 type PayoutService struct {
-	repo repository.PayoutRepository
+	repo         repository.PayoutRepository
+	ledgerClient *grpcClient.LedgerClient
 }
 
-func NewPayoutService(repo repository.PayoutRepository) *PayoutService {
-	return &PayoutService{repo: repo}
+func NewPayoutService(
+	repo repository.PayoutRepository,
+	ledgerClient *grpcClient.LedgerClient,
+) *PayoutService {
+	return &PayoutService{repo: repo, ledgerClient: ledgerClient}
 }
 
 func (s *PayoutService) CreatePayout(ctx context.Context, req model.CreatePayoutRequest) (*model.CreatePayoutResponse, error) {
@@ -25,7 +31,15 @@ func (s *PayoutService) CreatePayout(ctx context.Context, req model.CreatePayout
 		Status:        "Created",
 		CreatedAt:     time.Now(),
 	}
+	err := s.ledgerClient.CreateLedgerEntries(
+		ctx,
+		payout.ID,
+		payout.Amount,
+	)
 
+	if err != nil {
+		return nil, err
+	}
 	if err := s.repo.Create(ctx, payout); err != nil {
 		return nil, err
 	}

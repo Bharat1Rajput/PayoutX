@@ -3,10 +3,11 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 
-	"github.com/Bharat1Rajput/payout-service/internal/database"
-	"github.com/Bharat1Rajput/payout-service/internal/handler"
-	"github.com/Bharat1Rajput/payout-service/internal/repository"
-	"github.com/Bharat1Rajput/payout-service/internal/service"
+	"github.com/Bharat1Rajput/payoutX/payout-service/internal/database"
+	grpcClient "github.com/Bharat1Rajput/payoutX/payout-service/internal/grpc"
+	"github.com/Bharat1Rajput/payoutX/payout-service/internal/handler"
+	"github.com/Bharat1Rajput/payoutX/payout-service/internal/repository"
+	"github.com/Bharat1Rajput/payoutX/payout-service/internal/service"
 )
 
 func main() {
@@ -14,8 +15,8 @@ func main() {
 	db := database.NewPostgres()
 
 	repo := repository.NewPostgresPayoutRepo(db)
-
-	payoutService := service.NewPayoutService(repo)
+	ledgerClient := grpcClient.NewLedgerClient()
+	payoutService := service.NewPayoutService(repo, ledgerClient)
 
 	payoutHandler := handler.NewPayoutHandler(
 		payoutService,

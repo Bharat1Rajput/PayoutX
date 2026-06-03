@@ -3,8 +3,8 @@ package handler
 import (
 	"net/http"
 
-	"github.com/Bharat1Rajput/payout-service/internal/model"
-	"github.com/Bharat1Rajput/payout-service/internal/service"
+	"github.com/Bharat1Rajput/payoutX/payout-service/internal/model"
+	"github.com/Bharat1Rajput/payoutX/payout-service/internal/service"
 	"github.com/gin-gonic/gin"
 )
 

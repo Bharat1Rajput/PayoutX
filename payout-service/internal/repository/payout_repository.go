@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 
-	"github.com/Bharat1Rajput/payout-service/internal/model"
+	"github.com/Bharat1Rajput/payoutX/payout-service/internal/model"
 )
 
 type PayoutRepository interface {
