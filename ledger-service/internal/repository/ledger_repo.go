@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 
-	"github.com/Bharat1Rajput/ledger-service/internal/model"
+	"github.com/Bharat1Rajput/payoutX/ledger-service/internal/model"
 )
 
 type LedgerRepo interface {

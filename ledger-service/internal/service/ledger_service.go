@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/Bharat1Rajput/ledger-service/internal/model"
-	"github.com/Bharat1Rajput/ledger-service/internal/repository"
+	"github.com/Bharat1Rajput/payoutX/ledger-service/internal/model"
+	"github.com/Bharat1Rajput/payoutX/ledger-service/internal/repository"
 	"github.com/google/uuid"
 )
 

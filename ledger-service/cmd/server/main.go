@@ -1,38 +1,55 @@
 package main
 
 import (
-	"context"
 	"log"
+	"net"
 
-	"github.com/Bharat1Rajput/ledger-service/internal/database"
-	"github.com/Bharat1Rajput/ledger-service/internal/model"
-	"github.com/Bharat1Rajput/ledger-service/internal/repository"
-	"github.com/Bharat1Rajput/ledger-service/internal/service"
+	pb "github.com/Bharat1Rajput/payoutX/proto/ledger"
+
+	grpcHandler "github.com/Bharat1Rajput/payoutX/ledger-service/internal/grpc"
+
+	"github.com/Bharat1Rajput/payoutX/ledger-service/internal/database"
+	"github.com/Bharat1Rajput/payoutX/ledger-service/internal/repository"
+	"github.com/Bharat1Rajput/payoutX/ledger-service/internal/service"
+
+	"google.golang.org/grpc"
 )
 
 func main() {
 
 	db := database.NewPostgres()
 
-	repo := repository.NewPostgresLedgerRepo(db)
+	repo := repository.NewPostgresLedgerRepo(
+		db,
+	)
 
 	ledgerService := service.NewLedgerService(
 		repo,
 	)
 
-	req := model.CreateLedgerEntryRequest{
-		TransactionID: "payout_456",
-		Amount:        1000,
-	}
+	handler := grpcHandler.NewLedgerGRPCHandler(
+		ledgerService,
+	)
 
-	err := ledgerService.CreateLedgerEntries(
-		context.Background(),
-		req,
+	lis, err := net.Listen(
+		"tcp",
+		":50051",
 	)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	log.Println("ledger entries created")
+	grpcServer := grpc.NewServer()
+
+	pb.RegisterLedgerServiceServer(
+		grpcServer,
+		handler,
+	)
+
+	log.Println("ledger grpc server running on :50051")
+
+	if err := grpcServer.Serve(lis); err != nil {
+		log.Fatal(err)
+	}
 }

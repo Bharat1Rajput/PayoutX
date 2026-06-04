@@ -2,8 +2,10 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
+	"github.com/Bharat1Rajput/payoutX/payout-service/internal/kafka"
 	"github.com/Bharat1Rajput/payoutX/payout-service/internal/model"
 	"github.com/Bharat1Rajput/payoutX/payout-service/internal/repository"
 	"github.com/google/uuid"
@@ -12,15 +14,17 @@ import (
 )
 
 type PayoutService struct {
-	repo         repository.PayoutRepository
-	ledgerClient *grpcClient.LedgerClient
+	repo          repository.PayoutRepository
+	ledgerClient  *grpcClient.LedgerClient
+	kafkaProducer *kafka.Producer
 }
 
 func NewPayoutService(
 	repo repository.PayoutRepository,
 	ledgerClient *grpcClient.LedgerClient,
+	kafkaProducer *kafka.Producer,
 ) *PayoutService {
-	return &PayoutService{repo: repo, ledgerClient: ledgerClient}
+	return &PayoutService{repo: repo, ledgerClient: ledgerClient, kafkaProducer: kafkaProducer}
 }
 
 func (s *PayoutService) CreatePayout(ctx context.Context, req model.CreatePayoutRequest) (*model.CreatePayoutResponse, error) {
@@ -41,6 +45,28 @@ func (s *PayoutService) CreatePayout(ctx context.Context, req model.CreatePayout
 		return nil, err
 	}
 	if err := s.repo.Create(ctx, payout); err != nil {
+		return nil, err
+	}
+
+	event := kafka.PayoutCreatedEvent{
+		PayoutID:      payout.ID,
+		BeneficiaryID: payout.BeneficiaryID,
+		Amount:        payout.Amount,
+		Status:        payout.Status,
+	}
+
+	eventBytes, err := json.Marshal(event)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.kafkaProducer.Publish(
+		ctx,
+		[]byte(payout.ID),
+		eventBytes,
+	)
+
+	if err != nil {
 		return nil, err
 	}
 
