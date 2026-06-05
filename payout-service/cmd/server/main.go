@@ -1,8 +1,6 @@
 package main
 
 import (
-	"context"
-
 	"github.com/gin-gonic/gin"
 
 	"github.com/Bharat1Rajput/payoutX/payout-service/internal/database"
@@ -26,12 +24,6 @@ func main() {
 		"payout.created",
 	)
 
-	kafkaConsumer := kafka.NewConsumer(
-		"localhost:9092",
-		"payout.created",
-		"payout-group",
-	)
-
 	payoutService := service.NewPayoutService(
 		repo,
 		ledgerClient,
@@ -41,8 +33,6 @@ func main() {
 	payoutHandler := handler.NewPayoutHandler(
 		payoutService,
 	)
-
-	go kafkaConsumer.Start(context.Background())
 
 	router := gin.Default()
 
