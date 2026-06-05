@@ -9,3 +9,9 @@ type CreatePayoutResponse struct {
 	BankReference string `json:"bank_reference"`
 	Status        string `json:"status"`
 }
+
+
+type BankWebhookRequest struct {
+	PayoutID string `json:"payout_id"`
+	Status   string `json:"status"`
+}

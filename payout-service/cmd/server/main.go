@@ -41,5 +41,10 @@ func main() {
 		payoutHandler.CreatePayout,
 	)
 
+	router.POST(
+		"/webhooks/bank",
+		payoutHandler.HandleBankWebhook,
+	)
+
 	router.Run(":8080")
 }

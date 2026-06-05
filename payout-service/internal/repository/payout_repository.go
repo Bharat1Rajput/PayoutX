@@ -10,4 +10,7 @@ type PayoutRepository interface {
 	Create(
 		ctx context.Context, payout *model.Payout,
 	) error 
+	UpdateStatus(
+		ctx context.Context, payoutID string, status string,
+	) error
 }

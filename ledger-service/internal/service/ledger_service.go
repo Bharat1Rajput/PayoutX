@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"time"
 
 	"github.com/Bharat1Rajput/payoutX/ledger-service/internal/model"
@@ -39,7 +39,7 @@ func (s *LedgerService) CreateLedgerEntries(ctx context.Context, req model.Creat
 		},
 	}
 
-	fmt.Println("Creating ledger entries:", entries)
+	log.Printf("Creating ledger entries for transaction %s:", req.TransactionID)
 	return s.repo.CreateEntries(ctx, entries)
 
 }

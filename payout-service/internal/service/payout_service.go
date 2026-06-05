@@ -76,3 +76,17 @@ func (s *PayoutService) CreatePayout(ctx context.Context, req model.CreatePayout
 	}, nil
 
 }
+
+func (s *PayoutService) UpdatePayoutStatus(
+	ctx context.Context,
+	payoutID string,
+	status string,
+) error {
+
+	return s.repo.UpdateStatus(
+		ctx,
+		payoutID,
+		status,
+	)
+}
+

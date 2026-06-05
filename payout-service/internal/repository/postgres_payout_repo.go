@@ -27,3 +27,15 @@ VALUES ($1,$2,$3,$4,$5)
 	return err
 
 }
+
+
+func (r *PostgresPayoutRepo) UpdateStatus(ctx context.Context, payoutID string, status string) error {
+	query := `
+UPDATE payouts
+SET status = $1
+WHERE id = $2
+`
+	_, err := r.db.Exec(ctx, query, status, payoutID)
+
+	return err
+}	
