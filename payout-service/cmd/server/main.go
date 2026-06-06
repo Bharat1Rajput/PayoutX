@@ -40,7 +40,11 @@ func main() {
 		"/payouts",
 		payoutHandler.CreatePayout,
 	)
-
+	router.PATCH(
+		"/payouts/:id/status",
+		payoutHandler.UpdatePayoutStatus,
+	)
+	
 	router.POST(
 		"/webhooks/bank",
 		payoutHandler.HandleBankWebhook,

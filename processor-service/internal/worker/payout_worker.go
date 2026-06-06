@@ -5,21 +5,40 @@ import (
 
 	"github.com/Bharat1Rajput/payoutX/processor-service/internal/bank"
 	"github.com/Bharat1Rajput/payoutX/processor-service/internal/model"
+	"github.com/Bharat1Rajput/payoutX/processor-service/internal/payout"
 )
 
 type PayoutWorker struct {
-	bankClient *bank.Client
+	bankClient   *bank.Client
+	payoutClient *payout.Client
 }
 
-func NewPayoutWorker(bankClient *bank.Client) *PayoutWorker {
+func NewPayoutWorker(bankClient *bank.Client, payoutClient *payout.Client) *PayoutWorker {
 	return &PayoutWorker{
-		bankClient: bankClient,
+		bankClient:   bankClient,
+		payoutClient: payoutClient,
 	}
 }
 
 func (w *PayoutWorker) ExecutePayout(
 	event model.PayoutCreatedEvent,
 ) error {
+
+
+	log.Println("processing payout")
+	err := w.payoutClient.UpdateStatus(
+		event.PayoutID,
+		"PROCESSING",
+	)
+
+	if err != nil {
+		return err
+	}
+
+	log.Printf(
+		"payout=%s marked as processing",
+		event.PayoutID,
+	)
 
 	resp, err := w.bankClient.CreatePayout(
 		bank.CreatePayoutRequest{
@@ -37,6 +56,8 @@ func (w *PayoutWorker) ExecutePayout(
 		event.PayoutID,
 		resp.BankReference,
 	)
+
+
 
 	return nil
 }

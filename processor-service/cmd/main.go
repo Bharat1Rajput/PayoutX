@@ -5,6 +5,7 @@ import (
 
 	"github.com/Bharat1Rajput/payoutX/processor-service/internal/bank"
 	"github.com/Bharat1Rajput/payoutX/processor-service/internal/kafka"
+	"github.com/Bharat1Rajput/payoutX/processor-service/internal/payout"
 	"github.com/Bharat1Rajput/payoutX/processor-service/internal/worker"
 )
 
@@ -14,8 +15,13 @@ func main() {
 		"http://localhost:8081",
 	)
 
+	payoutClient := payout.NewClient(
+		"http://localhost:8080",
+	)
+
 	payoutWorker := worker.NewPayoutWorker(
 		bankClient,
+		payoutClient,
 	)
 
 	consumer := kafka.NewConsumer(

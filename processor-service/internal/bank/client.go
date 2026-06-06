@@ -35,6 +35,7 @@ func (c *Client) CreatePayout(
 		return nil, err
 	}
 
+
 	resp, err := http.Post(
 		c.baseURL+"/payouts",
 		"application/json",

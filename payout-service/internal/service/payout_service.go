@@ -3,12 +3,15 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/Bharat1Rajput/payoutX/payout-service/internal/kafka"
 	"github.com/Bharat1Rajput/payoutX/payout-service/internal/model"
 	"github.com/Bharat1Rajput/payoutX/payout-service/internal/repository"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 
 	grpcClient "github.com/Bharat1Rajput/payoutX/payout-service/internal/grpc"
 )
@@ -27,15 +30,37 @@ func NewPayoutService(
 	return &PayoutService{repo: repo, ledgerClient: ledgerClient, kafkaProducer: kafkaProducer}
 }
 
-func (s *PayoutService) CreatePayout(ctx context.Context, req model.CreatePayoutRequest) (*model.CreatePayoutResponse, error) {
-	payout := &model.Payout{
-		ID:            uuid.NewString(),
-		BeneficiaryID: req.BeneficiaryID,
-		Amount:        req.Amount,
-		Status:        "Created",
-		CreatedAt:     time.Now(),
+func (s *PayoutService) CreatePayout(
+	ctx context.Context,
+	req model.CreatePayoutRequest,
+) (*model.CreatePayoutResponse, error) {
+
+	existingPayout, err := s.repo.GetByIdempotencyKey(
+		ctx,
+		req.IdempotencyKey,
+	)
+
+	if err == nil {
+		return &model.CreatePayoutResponse{
+			ID:     existingPayout.ID,
+			Status: existingPayout.Status,
+		}, nil
 	}
-	err := s.ledgerClient.CreateLedgerEntries(
+
+	if !errors.Is(err, pgx.ErrNoRows) {
+		return nil, err
+	}
+
+	payout := &model.Payout{
+		ID:             uuid.NewString(),
+		BeneficiaryID:  req.BeneficiaryID,
+		IdempotencyKey: req.IdempotencyKey,
+		Amount:         req.Amount,
+		Status:         model.PayoutCreated,
+		CreatedAt:      time.Now(),
+	}
+
+	err = s.ledgerClient.CreateLedgerEntries(
 		ctx,
 		payout.ID,
 		payout.Amount,
@@ -44,6 +69,7 @@ func (s *PayoutService) CreatePayout(ctx context.Context, req model.CreatePayout
 	if err != nil {
 		return nil, err
 	}
+
 	if err := s.repo.Create(ctx, payout); err != nil {
 		return nil, err
 	}
@@ -74,19 +100,37 @@ func (s *PayoutService) CreatePayout(ctx context.Context, req model.CreatePayout
 		ID:     payout.ID,
 		Status: payout.Status,
 	}, nil
-
 }
 
 func (s *PayoutService) UpdatePayoutStatus(
 	ctx context.Context,
 	payoutID string,
-	status string,
+	newStatus string,
 ) error {
+
+	payout, err := s.repo.GetByID(
+		ctx,
+		payoutID,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	if !model.IsValidTransition(
+		payout.Status,
+		newStatus,
+	) {
+		return fmt.Errorf(
+			"invalid state transition: %s -> %s",
+			payout.Status,
+			newStatus,
+		)
+	}
 
 	return s.repo.UpdateStatus(
 		ctx,
 		payoutID,
-		status,
+		newStatus,
 	)
 }
-
