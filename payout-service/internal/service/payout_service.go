@@ -10,6 +10,7 @@ import (
 	"github.com/Bharat1Rajput/payoutX/payout-service/internal/kafka"
 	"github.com/Bharat1Rajput/payoutX/payout-service/internal/model"
 	"github.com/Bharat1Rajput/payoutX/payout-service/internal/repository"
+	"github.com/Bharat1Rajput/payoutX/payout-service/internal/transaction"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
@@ -17,17 +18,19 @@ import (
 )
 
 type PayoutService struct {
-	repo          repository.PayoutRepository
-	ledgerClient  *grpcClient.LedgerClient
-	kafkaProducer *kafka.Producer
+	repo         repository.PayoutRepository
+	ledgerClient *grpcClient.LedgerClient
+	txManager    transaction.Manager
+	outboxRepo   repository.OutboxRepository
 }
 
 func NewPayoutService(
 	repo repository.PayoutRepository,
 	ledgerClient *grpcClient.LedgerClient,
-	kafkaProducer *kafka.Producer,
+	txManager transaction.Manager,
+	outboxRepo repository.OutboxRepository,
 ) *PayoutService {
-	return &PayoutService{repo: repo, ledgerClient: ledgerClient, kafkaProducer: kafkaProducer}
+	return &PayoutService{repo: repo, ledgerClient: ledgerClient, txManager: txManager, outboxRepo: outboxRepo}
 }
 
 func (s *PayoutService) CreatePayout(
@@ -70,10 +73,6 @@ func (s *PayoutService) CreatePayout(
 		return nil, err
 	}
 
-	if err := s.repo.Create(ctx, payout); err != nil {
-		return nil, err
-	}
-
 	event := kafka.PayoutCreatedEvent{
 		PayoutID:      payout.ID,
 		BeneficiaryID: payout.BeneficiaryID,
@@ -86,10 +85,40 @@ func (s *PayoutService) CreatePayout(
 		return nil, err
 	}
 
-	err = s.kafkaProducer.Publish(
+	err = s.txManager.WithinTransaction(
 		ctx,
-		[]byte(payout.ID),
-		eventBytes,
+		func(tx pgx.Tx) error {
+
+			err := s.repo.CreateTx(
+				ctx,
+				tx,
+				payout,
+			)
+
+			if err != nil {
+				return err
+			}
+
+			outboxEvent := &model.OutboxEvent{
+				ID:        uuid.NewString(),
+				Topic:     "payout.events",
+				Payload:   eventBytes,
+				Status:    model.OutboxPending,
+				CreatedAt: time.Now(),
+			}
+
+			err = s.outboxRepo.CreateOutboxEvent(
+				ctx,
+				tx,
+				outboxEvent,
+			)
+
+			if err != nil {
+				return err
+			}
+
+			return nil
+		},
 	)
 
 	if err != nil {

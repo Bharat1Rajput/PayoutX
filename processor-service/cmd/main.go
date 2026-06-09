@@ -19,9 +19,15 @@ func main() {
 		"http://localhost:8080",
 	)
 
+	dlqProducer := kafka.NewProducer(
+		"localhost:9092",
+		"payout-dlq",
+	)
+
 	payoutWorker := worker.NewPayoutWorker(
 		bankClient,
 		payoutClient,
+		dlqProducer,
 	)
 
 	consumer := kafka.NewConsumer(

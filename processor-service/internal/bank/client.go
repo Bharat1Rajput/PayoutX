@@ -3,6 +3,7 @@ package bank
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 )
 
@@ -35,7 +36,6 @@ func (c *Client) CreatePayout(
 		return nil, err
 	}
 
-
 	resp, err := http.Post(
 		c.baseURL+"/payouts",
 		"application/json",
@@ -48,10 +48,18 @@ func (c *Client) CreatePayout(
 
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf(
+			"bank returned status code: %d",
+			resp.StatusCode,
+		)
+	}
+
 	var response CreatePayoutResponse
 
-	err = json.NewDecoder(resp.Body).
-		Decode(&response)
+	err = json.NewDecoder(resp.Body).Decode(
+		&response,
+	)
 
 	if err != nil {
 		return nil, err

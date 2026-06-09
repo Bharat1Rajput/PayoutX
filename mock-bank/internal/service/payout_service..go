@@ -1,14 +1,8 @@
 package service
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
+	"errors"
 	"log"
-	"net/http"
-	"time"
-
-	"github.com/google/uuid"
 
 	"github.com/Bharat1Rajput/payoutX/mock-bank/internal/model"
 )
@@ -18,53 +12,84 @@ type PayoutService struct{}
 func NewPayoutService() *PayoutService {
 	return &PayoutService{}
 }
-
 func (s *PayoutService) CreatePayout(
 	req model.CreatePayoutRequest,
 ) (*model.CreatePayoutResponse, error) {
-
-	ref := fmt.Sprintf(
-		"BANK-%s",
-		uuid.NewString(),
+	log.Printf(
+		"received payout request: payout_id=%s amount=%d",
+		req.PayoutID,
+		req.Amount,
+	)
+	return nil, errors.New(
+		"bank unavailable",
 	)
 
-	go func() {
+	// // 70% failure rate for retry testing
+	// if rand.Intn(100) < 70 {
+	// 	log.Printf(
+	// 		"bank temporarily unavailable for payout=%s",
+	// 		req.PayoutID,
+	// 	)
 
-		time.Sleep(5 * time.Second)
+	// 	return nil, errors.New(
+	// 		"temporary bank failure",
+	// 	)
+	// }
 
-		webhook := model.BankWebhookRequest{
-			PayoutID: req.PayoutID,
-			Status:   "SUCCESS",
-		}
+	// ref := fmt.Sprintf(
+	// 	"BANK-%s",
+	// 	uuid.NewString(),
+	// )
 
-		body, err := json.Marshal(webhook)
-		if err != nil {
-			log.Printf("webhook marshal error: %v", err)
-			return
-		}
+	// log.Printf(
+	// 	"bank accepted payout=%s ref=%s",
+	// 	req.PayoutID,
+	// 	ref,
+	// )
 
-		resp, err := http.Post(
-			"http://localhost:8080/webhooks/bank",
-			"application/json",
-			bytes.NewBuffer(body),
-		)
+	// go func() {
 
-		if err != nil {
-			log.Printf("webhook send error: %v", err)
-			return
-		}
+	// 	time.Sleep(5 * time.Second)
 
-		defer resp.Body.Close()
+	// 	webhook := model.BankWebhookRequest{
+	// 		PayoutID: req.PayoutID,
+	// 		Status:   "SUCCESS",
+	// 	}
 
-		log.Printf(
-			"webhook sent for payout=%s",
-			req.PayoutID,
-		)
+	// 	body, err := json.Marshal(webhook)
+	// 	if err != nil {
+	// 		log.Printf(
+	// 			"webhook marshal error: %v",
+	// 			err,
+	// 		)
+	// 		return
+	// 	}
 
-	}()
+	// 	resp, err := http.Post(
+	// 		"http://localhost:8080/webhooks/bank",
+	// 		"application/json",
+	// 		bytes.NewBuffer(body),
+	// 	)
 
-	return &model.CreatePayoutResponse{
-		BankReference: ref,
-		Status:        "accepted",
-	}, nil
+	// 	if err != nil {
+	// 		log.Printf(
+	// 			"webhook send error: %v",
+	// 			err,
+	// 		)
+	// 		return
+	// 	}
+
+	// 	defer resp.Body.Close()
+
+	// 	log.Printf(
+	// 		"webhook sent for payout=%s",
+	// 		req.PayoutID,
+	// 	)
+
+	// }()
+
+	// return &model.CreatePayoutResponse{
+	// 	BankReference: ref,
+	// 	Status:        "accepted",
+	// }, nil
 }

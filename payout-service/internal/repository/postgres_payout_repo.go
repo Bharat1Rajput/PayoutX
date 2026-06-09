@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/Bharat1Rajput/payoutX/payout-service/internal/model"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -113,4 +114,37 @@ func (r *PostgresPayoutRepo) GetByIdempotencyKey(
 	}
 
 	return &payout, nil
+}
+
+func (r *PostgresPayoutRepo) CreateTx(
+	ctx context.Context,
+	tx pgx.Tx,
+	payout *model.Payout,
+) error {
+
+	query := `
+		INSERT INTO payouts
+		(
+			id,
+			beneficiary_id,
+			amount,
+			status,
+			idempotency_key,
+			created_at
+		)
+		VALUES ($1,$2,$3,$4,$5,$6)
+	`
+
+	_, err := tx.Exec(
+		ctx,
+		query,
+		payout.ID,
+		payout.BeneficiaryID,
+		payout.Amount,
+		payout.Status,
+		payout.IdempotencyKey,
+		payout.CreatedAt,
+	)
+
+	return err
 }

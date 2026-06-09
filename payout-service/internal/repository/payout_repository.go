@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/Bharat1Rajput/payoutX/payout-service/internal/model"
+	"github.com/jackc/pgx/v5"
 )
 
 type PayoutRepository interface {
@@ -18,9 +19,15 @@ type PayoutRepository interface {
 		ctx context.Context,
 		id string,
 	) (*model.Payout, error)
-	
+
 	GetByIdempotencyKey(
-	ctx context.Context,
-	key string,
-) (*model.Payout, error)
+		ctx context.Context,
+		key string,
+	) (*model.Payout, error)
+
+	CreateTx(
+		ctx context.Context,
+		tx pgx.Tx,
+		payout *model.Payout,
+	) error
 }
