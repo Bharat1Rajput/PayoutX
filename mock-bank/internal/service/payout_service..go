@@ -1,10 +1,18 @@
 package service
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
+	"math/rand"
+	"net/http"
+	"time"
 
 	"github.com/Bharat1Rajput/payoutX/mock-bank/internal/model"
+	"github.com/Bharat1Rajput/payoutX/mock-bank/internal/store"
+	"github.com/google/uuid"
 )
 
 type PayoutService struct{}
@@ -20,76 +28,101 @@ func (s *PayoutService) CreatePayout(
 		req.PayoutID,
 		req.Amount,
 	)
-	return nil, errors.New(
-		"bank unavailable",
+
+	// 70% failure rate for retry testing
+	if rand.Intn(100) < 70 {
+		log.Printf(
+			"bank temporarily unavailable for payout=%s",
+			req.PayoutID,
+		)
+
+		return nil, errors.New(
+			"temporary bank failure",
+		)
+	}
+
+	ref := fmt.Sprintf(
+		"BANK-%s",
+		uuid.NewString(),
 	)
 
-	// // 70% failure rate for retry testing
-	// if rand.Intn(100) < 70 {
-	// 	log.Printf(
-	// 		"bank temporarily unavailable for payout=%s",
-	// 		req.PayoutID,
-	// 	)
+	log.Printf(
+		"bank accepted payout=%s ref=%s",
+		req.PayoutID,
+		ref,
+	)
 
-	// 	return nil, errors.New(
-	// 		"temporary bank failure",
-	// 	)
-	// }
+	store.Save(
+		store.Payout{
+			PayoutID:      req.PayoutID,
+			Status:        "SUCCESS",
+			BankReference: ref,
+		},
+	)
 
-	// ref := fmt.Sprintf(
-	// 	"BANK-%s",
-	// 	uuid.NewString(),
-	// )
+	go func() {
 
-	// log.Printf(
-	// 	"bank accepted payout=%s ref=%s",
-	// 	req.PayoutID,
-	// 	ref,
-	// )
+		time.Sleep(5 * time.Second)
 
-	// go func() {
+		webhook := model.BankWebhookRequest{
+			PayoutID: req.PayoutID,
+			Status:   "SUCCESS",
+		}
 
-	// 	time.Sleep(5 * time.Second)
+		body, err := json.Marshal(webhook)
+		if err != nil {
+			log.Printf(
+				"webhook marshal error: %v",
+				err,
+			)
+			return
+		}
 
-	// 	webhook := model.BankWebhookRequest{
-	// 		PayoutID: req.PayoutID,
-	// 		Status:   "SUCCESS",
-	// 	}
+		resp, err := http.Post(
+			"http://localhost:8080/webhooks/bank",
+			"application/json",
+			bytes.NewBuffer(body),
+		)
 
-	// 	body, err := json.Marshal(webhook)
-	// 	if err != nil {
-	// 		log.Printf(
-	// 			"webhook marshal error: %v",
-	// 			err,
-	// 		)
-	// 		return
-	// 	}
+		if err != nil {
+			log.Printf(
+				"webhook send error: %v",
+				err,
+			)
+			return
+		}
 
-	// 	resp, err := http.Post(
-	// 		"http://localhost:8080/webhooks/bank",
-	// 		"application/json",
-	// 		bytes.NewBuffer(body),
-	// 	)
+		defer resp.Body.Close()
 
-	// 	if err != nil {
-	// 		log.Printf(
-	// 			"webhook send error: %v",
-	// 			err,
-	// 		)
-	// 		return
-	// 	}
+		log.Printf(
+			"webhook sent for payout=%s",
+			req.PayoutID,
+		)
 
-	// 	defer resp.Body.Close()
+	}()
 
-	// 	log.Printf(
-	// 		"webhook sent for payout=%s",
-	// 		req.PayoutID,
-	// 	)
+	return &model.CreatePayoutResponse{
+		BankReference: ref,
+		Status:        "accepted",
+	}, nil
+}
 
-	// }()
+func (s *PayoutService) GetPayout(
+	payoutID string,
+) (*model.GetPayoutResponse, error) {
 
-	// return &model.CreatePayoutResponse{
-	// 	BankReference: ref,
-	// 	Status:        "accepted",
-	// }, nil
+	payout, ok := store.Get(
+		payoutID,
+	)
+
+	if !ok {
+		return nil, fmt.Errorf(
+			"payout not found",
+		)
+	}
+
+	return &model.GetPayoutResponse{
+		PayoutID: payout.PayoutID,
+		Status:   payout.Status,
+	}, nil
 }

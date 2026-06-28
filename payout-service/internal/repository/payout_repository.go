@@ -30,4 +30,14 @@ type PayoutRepository interface {
 		tx pgx.Tx,
 		payout *model.Payout,
 	) error
+
+	UpdateBankReference(
+		ctx context.Context,
+		payoutID string,
+		bankReference string,
+	) error
+	GetProcessing(
+    ctx context.Context,
+) ([]model.Payout, error)
+
 }

@@ -163,3 +163,24 @@ func (s *PayoutService) UpdatePayoutStatus(
 		newStatus,
 	)
 }
+
+func (s *PayoutService) UpdateBankReference(
+	ctx context.Context,
+	payoutID string,
+	bankReference string,
+) error {
+
+	return s.repo.UpdateBankReference(
+		ctx,
+		payoutID,
+		bankReference,
+	)
+}
+
+func (s *PayoutService) GetProcessing(
+	ctx context.Context,
+) ([]model.Payout, error) {
+
+	return s.repo.GetProcessing(ctx)
+}
+

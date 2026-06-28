@@ -155,10 +155,29 @@ func (w *PayoutWorker) ExecutePayout(
 	}
 
 	log.Printf(
-		"bank accepted payout=%s ref=%s",
-		event.PayoutID,
-		resp.BankReference,
+	"bank accepted payout=%s ref=%s",
+	event.PayoutID,
+	resp.BankReference,
+)
+
+// Save bank reference in payout-service
+err = w.payoutClient.UpdateBankReference(
+	event.PayoutID,
+	resp.BankReference,
+)
+
+if err != nil {
+	return fmt.Errorf(
+		"failed to update bank reference: %w",
+		err,
 	)
+}
+
+log.Printf(
+	"bank reference saved for payout=%s",
+	event.PayoutID,
+)
+
 
 	return nil
 }

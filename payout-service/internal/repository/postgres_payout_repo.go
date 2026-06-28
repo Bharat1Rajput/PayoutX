@@ -148,3 +148,85 @@ func (r *PostgresPayoutRepo) CreateTx(
 
 	return err
 }
+
+func (r *PostgresPayoutRepo) UpdateBankReference(
+	ctx context.Context,
+	payoutID string,
+	bankReference string,
+) error {
+
+	query := `
+		UPDATE payouts
+		SET bank_reference = $1
+		WHERE id = $2
+	`
+
+	_, err := r.db.Exec(
+		ctx,
+		query,
+		bankReference,
+		payoutID,
+	)
+
+	return err
+}
+
+
+func (r *PostgresPayoutRepo) GetProcessing(
+	ctx context.Context,
+) ([]model.Payout, error) {
+
+	query := `
+		SELECT
+			id,
+			beneficiary_id,
+			amount,
+			status,
+			idempotency_key,
+			bank_reference,
+			created_at
+		FROM payouts
+		WHERE status = $1
+		ORDER BY created_at ASC
+	`
+
+	rows, err := r.db.Query(
+		ctx,
+		query,
+		model.PayoutProcessing,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var payouts []model.Payout
+
+	for rows.Next() {
+
+		var payout model.Payout
+
+		err := rows.Scan(
+			&payout.ID,
+			&payout.BeneficiaryID,
+			&payout.Amount,
+			&payout.Status,
+			&payout.IdempotencyKey,
+			&payout.BankReference,
+			&payout.CreatedAt,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		payouts = append(
+			payouts,
+			payout,
+		)
+	}
+
+	return payouts, nil
+}

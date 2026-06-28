@@ -22,5 +22,9 @@ func main() {
 		payoutHandler.CreatePayout,
 	)
 
+	router.GET(
+		"/payouts/:id",
+		payoutHandler.GetPayout,
+	)
 	router.Run(":8081")
 }

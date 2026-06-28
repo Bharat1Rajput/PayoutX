@@ -54,10 +54,23 @@ func main() {
 		"/webhooks/bank",
 		payoutHandler.HandleBankWebhook,
 	)
+	router.PATCH(
+		"/payouts/:id/bank-reference",
+		payoutHandler.UpdateBankReference,
+	)	
+
+	bankClient := bank.NewClient(
+	"http://localhost:8081",
+)
+
+reconciliationService := reconciliation.NewService(
+	payoutRepo,
+	bankClient,
+)
 
 	ctx := context.Background()
 
 	go publisher.Start(ctx)
-
+go reconciliationService.Start(ctx)
 	router.Run(":8080")
 }

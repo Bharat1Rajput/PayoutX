@@ -44,3 +44,30 @@ func (h *PayoutHandler) CreatePayout(
 
 	c.JSON(http.StatusOK, resp)
 }
+
+func (h *PayoutHandler) GetPayout(
+	c *gin.Context,
+) {
+
+	bankReference := c.Param("id")
+
+	resp, err := h.service.GetPayout(
+		bankReference,
+	)
+
+	if err != nil {
+		c.JSON(
+			http.StatusNotFound,
+			gin.H{
+				"error": err.Error(),
+			},
+		)
+
+		return
+	}
+
+	c.JSON(
+		http.StatusOK,
+		resp,
+	)
+}

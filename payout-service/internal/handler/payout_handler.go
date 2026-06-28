@@ -109,3 +109,41 @@ func (h *PayoutHandler) UpdatePayoutStatus(
 		"message": "status updated",
 	})
 }
+
+func (h *PayoutHandler) UpdateBankReference(
+	c *gin.Context,
+) {
+
+	payoutID := c.Param("id")
+
+	var req model.UpdateBankReferenceRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(
+			http.StatusBadRequest,
+			gin.H{"error": err.Error()},
+		)
+		return
+	}
+
+	err := h.svc.UpdateBankReference(
+		c.Request.Context(),
+		payoutID,
+		req.BankReference,
+	)
+
+	if err != nil {
+		c.JSON(
+			http.StatusInternalServerError,
+			gin.H{"error": err.Error()},
+		)
+		return
+	}
+
+	c.JSON(
+		http.StatusOK,
+		gin.H{
+			"message": "bank reference updated",
+		},
+	)
+}
